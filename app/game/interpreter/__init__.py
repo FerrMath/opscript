@@ -43,7 +43,7 @@ class Interpreter:
                         _, name, value = line.split(maxsplit=2)
                         if name in variables:
                             raise ValueError(f'Variable "{name}" already exists')
-                        variables[name] = value
+                        variables[name] = self.parse_variable_value(value)
                         continue
                 except IndexError as e:
                     print(f'Error at line: "{line}" invalid Variable data @ startup.txt: invalid variable declaration')
@@ -57,7 +57,7 @@ class Interpreter:
                     if line.startswith('#acts'):
                         raw_acts = line.split(maxsplit=1)[1]
                         # TODO will parse the [] captured in the raw_acts into a real python list
-                        acts.append(raw_acts)
+                        acts = self.parse_variable_value(raw_acts)
                         continue
                 except IndexError as e:
                     print(f'Error at line: "{line}" invalid act data @ startup.txt: No act name added to acts list')
@@ -76,3 +76,31 @@ class Interpreter:
             bool: True if the stripped line is empty or is marked as a comment in the txt file
         """
         return not line or line.startswith('//')
+
+    def parse_variable_value(self, value:str) -> Any:
+        temp_value = value.lower().strip()
+        
+        # List
+        if temp_value.startswith('[') and temp_value.endswith(']'):
+            items = value.strip()[1:-1].split(',')
+            items = [self.parse_variable_value(i.strip()) for i in items]
+            return items
+        
+        # boolean
+        if value == "true" : return True
+        if value == "false": return False
+        
+        # Int
+        try:
+            return int(value)
+        except Exception as e:
+            pass
+        
+        # Float
+        try:
+            return float(value)
+        except Exception as e:
+            pass
+        
+        # Default / Str
+        return value.replace("'", "").replace('"',"")
