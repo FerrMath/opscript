@@ -1,0 +1,12 @@
+#title A random tittle
+#author My author name
+
+// You can comment here
+
+#variable test_int 123
+#variable test_str "String"
+#variable test_float 123.45
+#variable test_bool false
+#variable test_list ["l1", "l2",'l3']
+
+#acts ["test","of", "acts"]
