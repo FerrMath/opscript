@@ -1,18 +1,26 @@
 from pathlib import Path
 from typing import Any
+from dataclasses import dataclass
+
+@dataclass
+class SetupData:
+    meta:dict[str,str]
+    variables:dict[str,Any]
+    acts: list[str]
+
+
 class Interpreter:
-    
     def __init__(self, game_folder:Path):
         self.setupfile = game_folder / 'setup.txt'
         
-    def parse_setup(self) -> dict:
+    def parse_setup(self) -> SetupData:
         """Handles parsing of the necessary setup for the game\n
         
         Runs the interpreter on the file setup.txt found inside the .../game_folder/acts folder,
         handling the gathering of meta data, the variables that will be used in the game, and the act names
 
         Returns:
-            dict: TEMP dict with the meta, variable and acts data
+            SetupData: Custom data type with the meta, variable and acts data
         """
         
         meta:dict[str,str] = {}
@@ -64,7 +72,7 @@ class Interpreter:
                     raise e
                 except Exception as e:
                     raise e
-        return {'meta':meta, 'variables':variables, 'acts':acts}
+        return SetupData(meta=meta, variables=variables, acts=acts)
     
     def is_ignorable_line(self, line:str) -> bool:
         """ Ignores empty lines and comment lines in the read file
@@ -93,13 +101,13 @@ class Interpreter:
         # Int
         try:
             return int(value)
-        except Exception as e:
+        except ValueError as e:
             pass
         
         # Float
         try:
             return float(value)
-        except Exception as e:
+        except ValueError as e:
             pass
         
         # Default / Str
