@@ -1,0 +1,9 @@
+This is a temporary txt file that will be used for runtime tests of the app
+// testing if a comment works
+
+the comment does work
+
+testing if empty lines are skipped correctly, so this should be line 1 and the first one line 0 but this line is actually 5
+It is not working as expected, the line counting, I need to figure out a way to skip the empty lines, oh i have an idea
+* HA, IT WORKED but this line should be ignored because it starts with '*'
+# This line also should be ignored because it starts with # for now

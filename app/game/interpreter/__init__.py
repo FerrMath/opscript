@@ -12,7 +12,7 @@ class SetupData:
 class Interpreter:
     def __init__(self, game_folder:Path):
         self.setupfile = game_folder / 'setup.txt'
-        
+
     def parse_setup(self) -> SetupData:
         """Handles parsing of the necessary setup for the game\n
         
@@ -73,7 +73,46 @@ class Interpreter:
                 except Exception as e:
                     raise e
         return SetupData(meta=meta, variables=variables, acts=acts)
-    
+
+    def parse_act(self, act_path: Path, variables: dict[str, Any]) -> dict[str, Any]:
+        """Parses an act file.
+
+        Args:
+            act_path (Path): Path to the act file.
+            variables (dict[str, Any]): Variables available during parsing.
+
+        Raises:
+            FileNotFoundError: If the act file cannot be found.
+
+        Returns:
+            dict[str, Any]: TEMP Parsed act data.
+        """
+        
+        if not act_path.exists():
+            raise FileNotFoundError(f'Act at path {act_path} does not exist, make sure to have the file created inside of the folder "Acts"')
+        
+        with open(act_path,'r',encoding='utf-8') as file:
+            data = {}
+            text = []
+            pointer = 0
+            lines: list[str] = [line.strip() for line in file if not self.is_ignorable_line(line.strip())]
+            while pointer < len(lines):
+                line = lines[pointer]
+                
+                if self.is_ignorable_line(line): 
+                    pointer += 1
+                    continue
+                
+                # Get the raw text with variables
+                if not line.startswith(('*','#')): # TEMP
+                    text.append({'pointer': pointer, 'text':line})
+                    pointer +=1
+                    continue
+                pointer +=1 
+            data["text"] = text # TEMP
+            
+        return data
+
     def is_ignorable_line(self, line:str) -> bool:
         """ Ignores empty lines and comment lines in the read file
 

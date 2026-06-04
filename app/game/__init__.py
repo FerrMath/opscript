@@ -8,11 +8,17 @@ class Game:
         self.__interpreter:Interpreter = Interpreter(self.__acts_folder)
         self.meta:dict[str,str] = {}
         self.variables:dict[str,Any] = {}
-        self.acts: list[str] = [] # Temp will create Act class later
+        self.acts: list[dict] = [] # Temp will create Act class later
     
     def setup(self):
-        # Run the setup
+        # Get the meta and variables data
         data = self.__interpreter.parse_setup()
         self.meta = data.meta
         self.variables = data.variables
-        self.acts = data.acts
+        
+        # prepare the acts data
+        act_names = data.acts
+        for act in act_names:
+            act_path = self.__acts_folder / f'{act}.txt'
+            self.acts.append(self.__interpreter.parse_act(act_path, self.variables))
+        

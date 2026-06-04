@@ -9,4 +9,4 @@
 #variable test_bool false
 #variable test_list ["l1", "l2",'l3']
 
-#acts ["test","of", "acts"]
+#acts ["test"]
