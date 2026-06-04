@@ -7,6 +7,7 @@
 #variable test_str "String"
 #variable test_float 123.45
 #variable test_bool false
-#variable test_list ["l1", "l2",'l3']
+// Will leave lists to be handled later
+// #variable test_list ["l1", "l2",'l3']
 
-#acts ["test"]
+#acts ["test", test2]

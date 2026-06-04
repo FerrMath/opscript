@@ -1,0 +1,9 @@
+This file will be used to display if the variables are being loaded properly
+Test of the variable test_int --> ${test_int}
+test of the variable test_str --> ${test_str}
+test of the variable test_float --> ${test_float}
+test of the variable test_bool --> ${test_bool}
+// test of the variable test_list --> ${test_list}
+All tests seem to be working perfectly
+
+So this line should work as well like this ${test_str}

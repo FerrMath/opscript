@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from typing import Any
 from dataclasses import dataclass
@@ -10,6 +11,8 @@ class SetupData:
 
 
 class Interpreter:
+    VAR_PATTERN = re.compile(r"\$\{([^}]+)\}")
+    
     def __init__(self, game_folder:Path):
         self.setupfile = game_folder / 'setup.txt'
 
@@ -87,30 +90,27 @@ class Interpreter:
         Returns:
             dict[str, Any]: TEMP Parsed act data.
         """
-        
+
         if not act_path.exists():
-            raise FileNotFoundError(f'Act at path {act_path} does not exist, make sure to have the file created inside of the folder "Acts"')
+            raise FileNotFoundError(
+                f'Act at path {act_path} does not exist, make sure to have the file created inside of the folder "Acts"'
+            )
         
         with open(act_path,'r',encoding='utf-8') as file:
-            data = {}
-            text = []
+            data = {'text':[],'bookmarks':[]} #Temp
             pointer = 0
             lines: list[str] = [line.strip() for line in file if not self.is_ignorable_line(line.strip())]
             while pointer < len(lines):
                 line = lines[pointer]
                 
-                if self.is_ignorable_line(line): 
-                    pointer += 1
-                    continue
-                
                 # Get the raw text with variables
                 if not line.startswith(('*','#')): # TEMP
-                    text.append({'pointer': pointer, 'text':line})
+                    if '${' in line:
+                        line = self.parse_text_line(line, variables)
+                    data['text'].append(line)
                     pointer +=1
                     continue
-                pointer +=1 
-            data["text"] = text # TEMP
-            
+                pointer +=1
         return data
 
     def is_ignorable_line(self, line:str) -> bool:
@@ -123,6 +123,15 @@ class Interpreter:
             bool: True if the stripped line is empty or is marked as a comment in the txt file
         """
         return not line or line.startswith('//')
+
+    def parse_text_line(self, expr:str, variables: dict) -> str:
+        def repl(match):
+            var_name = match.group(1)
+            var = variables.get(var_name)
+            if var is None:
+                raise ValueError(f'Variable "{var_name}" is not defined')
+            return str(var)
+        return self.VAR_PATTERN.sub(repl, expr)
 
     def parse_variable_value(self, value:str) -> Any:
         temp_value = value.lower().strip()
