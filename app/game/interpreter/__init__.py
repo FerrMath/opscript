@@ -103,6 +103,16 @@ class Interpreter:
             while pointer < len(lines):
                 line = lines[pointer]
                 
+                # Get the bookmarks
+                if line.startswith('#bookmark'):
+                    try:
+                        mark = line.split(maxsplit=1)[1]
+                        data['bookmarks'].append({'bookmark':mark, 'position':pointer})
+                        pointer += 1
+                        continue
+                    except IndexError as e:
+                        raise e
+                
                 # Get the raw text with variables
                 if not line.startswith(('*','#')): # TEMP
                     if '${' in line:

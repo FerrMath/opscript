@@ -7,3 +7,5 @@ test of the variable test_bool --> ${test_bool}
 All tests seem to be working perfectly
 
 So this line should work as well like this ${test_str}
+
+#bookmark test_de_bookmark
