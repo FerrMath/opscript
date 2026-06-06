@@ -92,31 +92,25 @@ class Interpreter:
         with open(act_path,'r',encoding='utf-8') as file:
             act = Act()
             pointer = 0
-            lines: list[str] = [line.strip() for line in file if not self.is_ignorable_line(line.strip())]
+            lines: list[str] = [line.rstrip() for line in file if not self.is_ignorable_line(line.rstrip())]
+            
             while pointer < len(lines):
                 line = lines[pointer]
-                
-                # Get the bookmarks
-                if line.startswith('#bookmark'):
-                    try:
-                        mark = line.split(maxsplit=1)[1]
-                        act.add_bookmark(Bookmark(act_path, mark, pointer))
-                        pointer += 1
-                        continue
-                    except IndexError as e:
-                        raise e
-                
-                # Get the raw text with interpolated variables
-                if not line.startswith(('*','#')): # TEMP
-                    node = TextNode(line, pointer)
-                    if '${' in line:
-                        text = self.parse_text_line(line, variables)
-                        node.text = text
-                    act.add_text_node(node)
-                    pointer +=1
-                    continue
+                self._process_line(line, pointer, variables, act, act_path)
                 pointer +=1
         return act
+
+    def _process_line(self, line:str, pointer:int, variables: dict[str, Any], current_act:Act, act_path:Path) -> None:
+        
+        if line.startswith('#bookmark'):
+            bkm = self.parse_bookmark(line, pointer, act_path)
+            current_act.add_bookmark(bkm)
+            return
+        # Get the raw text with interpolated variables if necessary
+        if not line.startswith(('*','#')): # TEMP verification
+            node = self.parse_text_node(line, pointer, variables)
+            current_act.add_text_node(node)
+            return
 
     def is_ignorable_line(self, line:str) -> bool:
         """ Ignores empty lines and comment lines in the read file
@@ -129,7 +123,18 @@ class Interpreter:
         """
         return not line or line.startswith('//')
 
-    def parse_text_line(self, expr:str, variables: dict) -> str:
+    def parse_text_node(self, line:str, pointer: int, variables:dict[str, Any]) -> TextNode:
+        node = TextNode(line, pointer)
+        if '${' in line:
+            text = self.interpolate_variables_in_text_line(line, variables)
+            node.text = text
+        return node
+        
+    def parse_bookmark(self, line:str, pointer:int, act_path:Path) -> Bookmark:
+            mark = line.split(maxsplit=1)[1]
+            return Bookmark(act_path, mark, pointer)
+
+    def interpolate_variables_in_text_line(self, expr:str, variables: dict) -> str:
         def repl(match):
             var_name = match.group(1)
             var = variables.get(var_name)
@@ -154,13 +159,13 @@ class Interpreter:
         # Int
         try:
             return int(value)
-        except ValueError as e:
+        except ValueError:
             pass
         
         # Float
         try:
             return float(value)
-        except ValueError as e:
+        except ValueError:
             pass
         
         # Default / Str
