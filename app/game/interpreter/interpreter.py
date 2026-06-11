@@ -2,12 +2,12 @@ import re
 from pathlib import Path
 from typing import Any
 from app.game.interpreter.act import Act
-from app.game.interpreter.models import SetupData, TextNode, Bookmark
+from app.game.interpreter.models import SetupData, TextNode, Bookmark, ChoiceNode, OptionNode, Node
 
 class Interpreter:
     VAR_PATTERN = re.compile(r"\$\{([^}]+)\}")
     
-    def __init__(self, game_folder:Path):
+    def __init__(self, game_folder: Path):
         self.setupfile = game_folder / 'setup.txt'
 
     def parse_setup(self) -> SetupData:
@@ -19,16 +19,16 @@ class Interpreter:
         Returns:
             SetupData: Custom data type with the meta, variable and acts data
         """
-        
-        meta:dict[str,str] = {}
-        variables:dict[str,Any] = {}
-        acts:list[str] = []
+        meta: dict[str, str] = {}
+        variables: dict[str, Any] = {}
+        acts: list[str] = []
         
         with open(self.setupfile, 'r', encoding='utf-8') as file:
             for line in file:
                 line = line.strip()
                 
-                if self.is_ignorable_line(line): continue
+                if self.is_ignorable_line(line): 
+                    continue
                 
                 # Meta data gathering
                 try:
@@ -83,36 +83,44 @@ class Interpreter:
         Returns:
             dict[str, Any]: TEMP Parsed act data.
         """
-
         if not act_path.exists():
             raise FileNotFoundError(
                 f'Act at path {act_path} does not exist, make sure to have the file created inside of the folder "Acts"'
             )
         
-        with open(act_path,'r',encoding='utf-8') as file:
+        with open(act_path, 'r', encoding='utf-8') as file:
             act = Act()
             pointer = 0
-            lines: list[str] = [line.rstrip() for line in file if not self.is_ignorable_line(line.rstrip())]
+            # Clean and filter lines safely
+            lines: list[str] = [line.rstrip() for line in file if not self.is_ignorable_line(line.strip())]
             
             while pointer < len(lines):
                 line = lines[pointer]
-                self._process_line(line, pointer, variables, act, act_path)
-                pointer +=1
+                # Reassign pointer based on where _process_line finishes reading
+                pointer = self._process_line(line, pointer, variables, lines, act, act_path)
         return act
 
-    def _process_line(self, line:str, pointer:int, variables: dict[str, Any], current_act:Act, act_path:Path) -> None:
+    def _process_line(self, line: str, pointer: int, variables: dict[str, Any], lines: list[str], current_act: Act, act_path: Path) -> int:
         
         if line.startswith('#bookmark'):
             bkm = self.parse_bookmark(line, pointer, act_path)
             current_act.add_bookmark(bkm)
-            return
-        # Get the raw text with interpolated variables if necessary
-        if not line.startswith(('*','#')): # TEMP verification
+            return pointer + 1
+            
+        if line.startswith('#choice'):
+            choice, updatedPointer = self.parse_choice_node(lines, pointer, variables)
+            current_act.add_choice_node(choice)
+            return updatedPointer
+            
+        # Text verification fallback
+        if not line.startswith(('*', '#')):
             node = self.parse_text_node(line, pointer, variables)
             current_act.add_text_node(node)
-            return
+            return pointer + 1
+            
+        return pointer + 1
 
-    def is_ignorable_line(self, line:str) -> bool:
+    def is_ignorable_line(self, line: str) -> bool:
         """ Ignores empty lines and comment lines in the read file
 
         Args:
@@ -123,18 +131,79 @@ class Interpreter:
         """
         return not line or line.startswith('//')
 
-    def parse_text_node(self, line:str, pointer: int, variables:dict[str, Any]) -> TextNode:
-        node = TextNode(line, pointer)
+    def parse_text_node(self, line: str, pointer: int, variables: dict[str, Any]) -> TextNode:
+        node = TextNode(text=line, position=pointer)
         if '${' in line:
             text = self.interpolate_variables_in_text_line(line, variables)
             node.text = text
         return node
-        
-    def parse_bookmark(self, line:str, pointer:int, act_path:Path) -> Bookmark:
-            mark = line.split(maxsplit=1)[1]
-            return Bookmark(act_path, mark, pointer)
 
-    def interpolate_variables_in_text_line(self, expr:str, variables: dict) -> str:
+    def parse_option_node(self, lines:list[str], pointer:int, variables: dict[str,Any]) -> tuple[OptionNode, int]:
+        line = lines[pointer]
+        clean = line.strip()
+        try:
+            txt = self.interpolate_variables_in_text_line(clean.split(maxsplit=1)[1], variables)
+        except IndexError:
+            raise ValueError(
+                f'Option needs to have a description: line {pointer}'
+            )
+
+        option = OptionNode(pointer, txt, [])
+        
+        base_indent = self.get_indent(line)
+        updatedPointer = pointer + 1
+        
+        while updatedPointer < len(lines):
+            line = lines[updatedPointer]
+            clean = line.strip()
+            
+            current_indent = self.get_indent(line)
+            
+            if current_indent <= base_indent:
+                break
+            
+            if clean.startswith('#choice'):
+                choice, updatedPointer = self.parse_choice_node(lines, updatedPointer, variables)
+                option.children.append(choice)
+                continue
+            
+            elif clean.startswith('*option'):
+                raise ValueError(
+                    f'Option cannot contain another option directly: line {updatedPointer}'
+                )
+            
+            option.children.append(
+                TextNode(text=clean, position=updatedPointer)
+            )
+            updatedPointer += 1
+        return option, updatedPointer
+    
+    def parse_choice_node(self, lines:list[str], pointer:int, variables: dict[str,Any])-> tuple[ChoiceNode, int]:
+        choice = ChoiceNode(pointer, [])
+        base_indent = self.get_indent(lines[pointer])
+        updatedPointer = pointer + 1
+        
+        while updatedPointer < len(lines):
+            line = lines[updatedPointer]
+            current_indent = self.get_indent(line)
+            clean_line = line.strip()
+            if current_indent <= base_indent:
+                break
+            if clean_line.startswith('*option'):
+                option, updatedPointer = self.parse_option_node(lines, updatedPointer, variables)
+                choice.options.append(option)
+                continue
+            raise ValueError(f'Choice só pode conter options: line {updatedPointer} -> {line}')
+        return choice, updatedPointer
+        
+    def parse_bookmark(self, line: str, pointer: int, act_path: Path) -> Bookmark:
+        mark = line.split(maxsplit=1)[1]
+        return Bookmark(act_path, mark, pointer)
+
+    def get_indent(self, line:str) -> int:
+        return len(line) - len(line.lstrip())
+
+    def interpolate_variables_in_text_line(self, expr: str, variables: dict) -> str:
         def repl(match):
             var_name = match.group(1)
             var = variables.get(var_name)
@@ -143,18 +212,19 @@ class Interpreter:
             return str(var)
         return self.VAR_PATTERN.sub(repl, expr)
 
-    def parse_variable_value(self, value:str) -> Any:
+    def parse_variable_value(self, value: str) -> Any:
         temp_value = value.lower().strip()
         
         # List
         if temp_value.startswith('[') and temp_value.endswith(']'):
             items = value.strip()[1:-1].split(',')
-            items = [self.parse_variable_value(i.strip()) for i in items]
-            return items
+            return [self.parse_variable_value(i.strip()) for i in items]
         
-        # boolean
-        if value == "true" : return True
-        if value == "false": return False
+        # Boolean
+        if temp_value == "true": 
+            return True
+        if temp_value == "false": 
+            return False
         
         # Int
         try:
@@ -169,4 +239,4 @@ class Interpreter:
             pass
         
         # Default / Str
-        return value.replace("'", "").replace('"',"")
+        return value.replace("'", "").replace('"', "")

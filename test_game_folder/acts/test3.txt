@@ -1,0 +1,19 @@
+Here I will test the choice logic
+First things first, I need to detect the #choice
+
+#choice
+    *option Then I have to detect indented lines
+        And also nested lines
+        #choice
+            // Choices cannot have anything directly related to them besides *option
+            *option a
+                test
+            *option b
+                test
+    *option another option
+        ...
+            
+
+# primeiro crio o node de choice que vai segurar todas as informações que vou fazer o parse agora
+# depois pego as options que vão ser iniciadas com #option e criar o objeto option que será adicionado em choice
+# Por ultimo pego as coisas que vão estar dentro dessa #option

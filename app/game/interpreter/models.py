@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any
 from dataclasses import dataclass
+from abc import ABC
 
 @dataclass
 class SetupData:
@@ -15,6 +16,18 @@ class Bookmark:
     position: int
 
 @dataclass
-class TextNode:
-    text: str
+class Node(ABC):
     position: int
+
+@dataclass
+class TextNode(Node):
+    text: str
+
+@dataclass
+class OptionNode(Node):
+    text: str
+    children: list[Node]
+
+@dataclass
+class ChoiceNode(Node):
+    options: list[OptionNode]
