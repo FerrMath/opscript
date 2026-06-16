@@ -16,6 +16,11 @@ class Bookmark:
     position: int
 
 @dataclass
+class ConditionBranch:
+    condition: str | None
+    children: list[Node]
+
+@dataclass
 class Node(ABC):
     position: int
 
@@ -31,3 +36,7 @@ class OptionNode(Node):
 @dataclass
 class ChoiceNode(Node):
     options: list[OptionNode]
+
+@dataclass
+class ConditionNode(Node):
+    branches: list[ConditionBranch]

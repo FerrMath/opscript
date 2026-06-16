@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 from typing import Any
 from app.game.interpreter.act import Act
-from app.game.interpreter.models import SetupData, TextNode, Bookmark, ChoiceNode, OptionNode, Node
+from app.game.interpreter.models import SetupData, TextNode, Bookmark, ChoiceNode, OptionNode, ConditionNode, ConditionBranch, Node
 
 class Interpreter:
     VAR_PATTERN = re.compile(r"\$\{([^}]+)\}")
@@ -97,28 +97,33 @@ class Interpreter:
             while pointer < len(lines):
                 line = lines[pointer]
                 # Reassign pointer based on where _process_line finishes reading
-                pointer = self._process_line(line, pointer, variables, lines, act, act_path)
+                _, pointer = self._process_line(line, pointer, variables, lines, act, act_path)
         return act
 
-    def _process_line(self, line: str, pointer: int, variables: dict[str, Any], lines: list[str], current_act: Act, act_path: Path) -> int:
+    def _process_line(self, line: str, pointer: int, variables: dict[str, Any], lines: list[str], current_act: Act, act_path: Path) -> tuple[Node | Bookmark | None, int]:
         
         if line.startswith('#bookmark'):
             bkm = self.parse_bookmark(line, pointer, act_path)
             current_act.add_bookmark(bkm)
-            return pointer + 1
+            return bkm, pointer + 1
             
         if line.startswith('#choice'):
             choice, updatedPointer = self.parse_choice_node(lines, pointer, variables)
             current_act.add_choice_node(choice)
-            return updatedPointer
-            
+            return choice, updatedPointer
+        
+        if line.startswith('#if'):
+            cond, updatedPointer = self.parse_conditional_node(lines,pointer,variables, current_act, act_path)
+            current_act.add_condition_node(cond)
+            return cond, updatedPointer
+        
         # Text verification fallback
         if not line.startswith(('*', '#')):
             node = self.parse_text_node(line, pointer, variables)
             current_act.add_text_node(node)
-            return pointer + 1
+            return node, pointer + 1
             
-        return pointer + 1
+        return None, pointer + 1
 
     def is_ignorable_line(self, line: str) -> bool:
         """ Ignores empty lines and comment lines in the read file
@@ -177,7 +182,7 @@ class Interpreter:
             )
             updatedPointer += 1
         return option, updatedPointer
-    
+
     def parse_choice_node(self, lines:list[str], pointer:int, variables: dict[str,Any])-> tuple[ChoiceNode, int]:
         choice = ChoiceNode(pointer, [])
         base_indent = self.get_indent(lines[pointer])
@@ -195,13 +200,48 @@ class Interpreter:
                 continue
             raise ValueError(f'Choice só pode conter options: line {updatedPointer} -> {line}')
         return choice, updatedPointer
-        
+
+    def parse_conditional_node(self, lines:list[str], pointer:int, variables:dict[str, Any], act: Act, act_path: Path):
+        node = ConditionNode(pointer, branches=[])
+        branch = ConditionBranch(self.get_clean_if_expression(lines[pointer]), children=[])
+        base_indent = self.get_indent(lines[pointer]) # First will always be 0
+        pointer += 1 # Go to next line
+        while pointer < len(lines):
+            # Check the idented lines
+            line = lines[pointer]
+            clean_line = line.strip()
+            indent = self.get_indent(line)
+            if indent < base_indent:
+                break
+            if indent == base_indent:
+                if clean_line.startswith("#elif"):
+                    node.branches.append(branch)
+                    branch = ConditionBranch(self.get_clean_if_expression(line), children=[])
+                    pointer += 1
+                    continue
+                if clean_line.startswith("#else"):
+                    node.branches.append(branch)
+                    branch = ConditionBranch(None, children=[])
+                    pointer += 1
+                    continue
+                break
+
+            else:
+                child, pointer = self._process_line(clean_line, pointer, variables, lines, act, act_path)
+                if isinstance(child, Node):
+                    branch.children.append(child)
+        node.branches.append(branch)
+        return node, pointer
+
     def parse_bookmark(self, line: str, pointer: int, act_path: Path) -> Bookmark:
         mark = line.split(maxsplit=1)[1]
         return Bookmark(act_path, mark, pointer)
 
     def get_indent(self, line:str) -> int:
         return len(line) - len(line.lstrip())
+
+    def get_clean_if_expression(self, line: str) -> str:
+        return line.split(maxsplit=1)[1]
 
     def interpolate_variables_in_text_line(self, expr: str, variables: dict) -> str:
         def repl(match):
