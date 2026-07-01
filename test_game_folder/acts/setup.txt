@@ -3,11 +3,11 @@
 
 // You can comment here
 
-#variable test_int 123
-#variable test_str "String"
-#variable test_float 123.45
-#variable test_bool false
+#var test_int 123
+#var test_str "teste"
+#var test_float 123.45
+#var test_bool false
 // Will leave lists to be handled later
-// #variable test_list ["l1", "l2",'l3']
+// #var test_list ["l1", "l2",'l3']
 
 #acts ["test", test2, test3, test4]

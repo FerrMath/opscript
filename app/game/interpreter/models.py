@@ -10,12 +10,6 @@ class SetupData:
     acts: list[str]
 
 @dataclass
-class Bookmark:
-    act_path: Path
-    name: str
-    position: int
-
-@dataclass
 class ConditionBranch:
     condition: str | None
     children: list[Node]
@@ -25,8 +19,16 @@ class Node(ABC):
     position: int
 
 @dataclass
+class BookmarkNode(Node):
+    act_path: Path
+    name: str
+
+@dataclass
 class TextNode(Node):
     text: str
+    
+    def render(self):
+        return self.text
 
 @dataclass
 class OptionNode(Node):

@@ -7,11 +7,12 @@ First things first, I need to detect the #choice
         #choice
             // Choices cannot have anything directly related to them besides *option
             *option a
-                test
+                test a
             *option b
-                test
+                test b
     *option another option
         ...
+        
             
 
 # primeiro crio o node de choice que vai segurar todas as informações que vou fazer o parse agora
