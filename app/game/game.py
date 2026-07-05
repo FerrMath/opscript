@@ -2,8 +2,10 @@ from typing import Any
 from pathlib import Path
 from app.game.interpreter import Interpreter
 from app.game.interpreter.act import Act
-from app.game.interpreter.models import ChoiceNode, Node, OptionNode, TextNode, ConditionNode
+from app.game.interpreter.models import ChoiceNode, Node, OptionNode, TextNode, ConditionNode, SetNode
 from app.game.interpreter.runtime.conditions import validate
+from app.game.interpreter.runtime.expression import eval
+from app.game.interpreter.runtime.text import get_interpolated_text_line
 
 class Game:
     def __init__(self, game_folder:Path) -> None:
@@ -35,7 +37,7 @@ class Game:
     
     def render_node(self, node:Node):
         if isinstance(node, TextNode):
-            print(f"text: {node.text}")
+            print(f"text: {get_interpolated_text_line(node.text, self.variables)}")
         
         if isinstance(node, ChoiceNode):
             print()
@@ -62,3 +64,9 @@ class Game:
             print("Printing children of option")
             for c in node.children:
                 self.render_node(c)
+                
+        if isinstance(node, SetNode):
+            if node.variable not in self.variables.keys():
+                raise ValueError(f"Invalid variable to set value")
+            self.variables[node.variable] = eval(node.expression, self.variables)
+            

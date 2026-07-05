@@ -41,7 +41,14 @@ def parse_variable_value(value: str) -> Any:
         
         # Default / Str
         return value.replace("'", "").replace('"', "")
-    
+
+def prepare_set_expression(expr: str, variables: dict[str,Any]) -> tuple[str,str]:
+    _, clean = expr.split(maxsplit=1)
+    variable, expression = clean.split('=', maxsplit=1)
+    if variable.strip() not in variables.keys():
+        raise ValueError(f"Variable {variable} does not exist")
+    return variable.strip(), expression.strip()
+
 def eval_conditional_expression(expr:str) -> tuple[str,str, Callable]:
     ops = {
         "==": operator.eq,

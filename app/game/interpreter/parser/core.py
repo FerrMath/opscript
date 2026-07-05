@@ -4,6 +4,7 @@ from pathlib import Path
 from app.game.interpreter.models import Node, TextNode
 from app.game.interpreter.parser.bookmark import parse_bookmark
 from app.game.interpreter.parser.choice import parse_choice_node
+from app.game.interpreter.parser.set import parse_set_node
 from app.game.interpreter.utils.variables import interpolate_variables_in_text_line
 from app.game.interpreter.parser.conditional import parse_conditional_node
 
@@ -31,6 +32,10 @@ class Parser:
         if clean.startswith('#bookmark'):
             bkmk = parse_bookmark(line, pointer, self.file_path)
             return bkmk, pointer+1
+        
+        if clean.startswith('#set'):
+            setter = parse_set_node(line, pointer, self.variables)
+            return setter, pointer + 1
             
         if clean.startswith('#choice'):
             choice, pointer = parse_choice_node(self, lines, pointer)
@@ -42,7 +47,7 @@ class Parser:
         
         # Text verification fallback
         if not clean.startswith(('*', '#')):
-            text = interpolate_variables_in_text_line(line.strip(), self.variables)
+            text = line.strip()
             return TextNode(pointer, text), pointer+1
             
         return None, pointer + 1

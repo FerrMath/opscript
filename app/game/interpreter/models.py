@@ -4,6 +4,27 @@ from dataclasses import dataclass
 from abc import ABC
 
 @dataclass
+class Node(ABC):
+    position: int
+
+class Expression:
+    pass
+
+@dataclass
+class LiteralExpression(Expression):
+    value: Any
+
+@dataclass
+class VariableExpression(Expression):
+    name: str
+
+@dataclass
+class BinaryExpression(Expression):
+    left: Expression
+    right: Expression
+    operator: str
+
+@dataclass
 class SetupData:
     meta:dict[str,str]
     variables:dict[str,Any]
@@ -13,10 +34,6 @@ class SetupData:
 class ConditionBranch:
     condition: str | None
     children: list[Node]
-
-@dataclass
-class Node(ABC):
-    position: int
 
 @dataclass
 class BookmarkNode(Node):
@@ -29,6 +46,14 @@ class TextNode(Node):
     
     def render(self):
         return self.text
+
+@dataclass
+class SetNode(Node):
+    variable:str
+    expression: Expression
+    
+    def eval(self):
+        return ...
 
 @dataclass
 class OptionNode(Node):

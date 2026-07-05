@@ -1,0 +1,14 @@
+This will be the tests of the #set command
+the variable will be starting with the value of --> [${set_test}]
+Here there will be a choice:
+
+#choice
+    *option Add to value
+        This will add to the value
+        #set set_test = ${set_test} + 1
+    *option Sub from value
+        this will subtract from the value
+        #set set_test = ${set_test} - 1
+
+This will happen after the choice
+The updated value of the variable should be -+ 1 of the original value, so --> ${set_test}

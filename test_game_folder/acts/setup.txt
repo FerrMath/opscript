@@ -7,7 +7,8 @@
 #var test_str "teste"
 #var test_float 123.45
 #var test_bool false
+#var set_test 5
 // Will leave lists to be handled later
 // #var test_list ["l1", "l2",'l3']
 
-#acts ["test", test2, test3, test4]
+#acts ["test", test2, test3, test4, test5]
