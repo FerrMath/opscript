@@ -54,7 +54,8 @@ class Game:
         if isinstance(node, ConditionNode):
             first_true_branch_found = False
             for n in node.branches:
-                if validate(n.condition, self.variables) and not first_true_branch_found:
+                if first_true_branch_found: break
+                if validate(n, self.variables):
                     first_true_branch_found = True
                     for child in n.children:
                         self.render_node(child)

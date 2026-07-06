@@ -4,7 +4,7 @@
 // You can comment here
 
 #var test_int 123
-#var test_str "teste"
+#var test_str "test"
 #var test_float 123.45
 #var test_bool false
 #var set_test 5

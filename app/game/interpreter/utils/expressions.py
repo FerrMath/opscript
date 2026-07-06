@@ -1,8 +1,15 @@
 import ast
 import operator
 
+from app.game.interpreter.utils.text import get_clean_expression
+from app.game.interpreter.utils.variables import interpolate_variables_in_text_line
 from app.game.interpreter.models import Expression, BinaryExpression, LiteralExpression, VariableExpression
 from typing import Any
+
+def create_clean_ast_node(expr:str, variables:dict[str,Any])-> ast.AST:
+    clean = get_clean_expression(expr)
+    clean = interpolate_variables_in_text_line(clean, variables)
+    return ast.parse(clean, mode="eval")
 
 def build_expression_tree(node: ast.AST) -> Expression:
     

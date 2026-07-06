@@ -42,7 +42,7 @@ class Parser:
             return choice, pointer
         
         if clean.startswith('#if'):
-            conditional, pointer = parse_conditional_node(self, lines, pointer)
+            conditional, pointer = parse_conditional_node(self, lines, pointer, self.variables)
             return conditional, pointer
         
         # Text verification fallback

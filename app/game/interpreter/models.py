@@ -32,7 +32,7 @@ class SetupData:
 
 @dataclass
 class ConditionBranch:
-    condition: str | None
+    condition: Expression | None
     children: list[Node]
 
 @dataclass

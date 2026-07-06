@@ -1,13 +1,17 @@
+import ast
+
 from app.game.interpreter.models import ConditionNode, ConditionBranch, Node
-from app.game.interpreter.utils.text import get_clean_if_expression, get_indent
-from typing import TYPE_CHECKING
+from app.game.interpreter.utils.expressions import build_expression_tree, create_clean_ast_node
+from app.game.interpreter.utils.text import get_indent
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from app.game.interpreter.parser.core import Parser
 
-def parse_conditional_node(parser:"Parser", lines:list[str], pointer:int) -> tuple[ConditionNode | None, int]:
+def parse_conditional_node(parser:"Parser", lines:list[str], pointer:int, variables:dict[str,Any]) -> tuple[ConditionNode | None, int]:
     node = ConditionNode(pointer, [])
-    branch = ConditionBranch(get_clean_if_expression(lines[pointer]),children=[])
+    expr = create_clean_ast_node(lines[pointer], variables)
+    branch = ConditionBranch(build_expression_tree(expr), children=[])
     
     base_indent = get_indent(lines[pointer])
     pointer += 1
@@ -23,7 +27,8 @@ def parse_conditional_node(parser:"Parser", lines:list[str], pointer:int) -> tup
         if current_indent == base_indent:
             if clean.startswith('#elif'):
                 node.branches.append(branch)
-                branch = ConditionBranch(get_clean_if_expression(line), children=[])
+                expr = create_clean_ast_node(lines[pointer], variables)
+                branch = ConditionBranch(build_expression_tree(expr), children=[])
                 pointer +=1
                 continue
             if clean.startswith("#else"):
