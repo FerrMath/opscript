@@ -2,9 +2,10 @@ from typing import Any
 from pathlib import Path
 from app.game.interpreter import Interpreter
 from app.game.interpreter.act import Act
-from app.game.interpreter.models import ChoiceNode, Node, OptionNode, TextNode, ConditionNode, SetNode
+from app.game.interpreter.models import BookmarkNode, ChoiceNode, GotoNode, Node, OptionNode, TextNode, ConditionNode, SetNode
 from app.game.interpreter.runtime.conditions import validate
 from app.game.interpreter.runtime.expression import eval
+from app.game.interpreter.runtime.goto import get_bookmark_for_goto
 from app.game.interpreter.runtime.text import get_interpolated_text_line
 
 class Game:
@@ -13,7 +14,7 @@ class Game:
         self.__interpreter:Interpreter = Interpreter(self.__acts_folder)
         self.meta:dict[str,str] = {}
         self.variables:dict[str,Any] = {}
-        self.acts: list[Act] = [] # Temp will create Act class later
+        self.acts: dict[Path,Act] = {} # Temp will create Act class later
     
     def setup(self):
         # Get the meta and variables data
@@ -22,20 +23,47 @@ class Game:
         self.variables = data.variables
         
         # prepare the acts data
-        act_names = data.acts
-        for act in act_names:
-            act_path = self.__acts_folder / f'{act}.txt'
-            self.acts.append(self.__interpreter.parse_act(act, act_path, self.variables))
+        self.acts = {
+            self.__acts_folder/f"{act}.txt"
+            :self.__interpreter.parse_act(act, self.__acts_folder/f"{act}.txt", self.variables)
+            for act in data.acts
+        }
+
     
     def run(self):
-        for act in self.acts:
-            print(f'\n\n*** Starting act: {act.name} ***')
-            for node in act.nodes:
-                self.render_node(node)
-            print(f'*** Ending act {act.name} ***')
-                
+        for act_value in self.acts.values():
+            self.render_act(act_value)
+            
     
-    def render_node(self, node:Node):
+    def render_act(self, act: Act, start_node_position:int=0) -> Act | None:
+    
+        node_index = start_node_position
+        while node_index < len(act.nodes):
+            base_node = act.nodes[node_index]
+            
+            node = self.render_node(base_node, act)
+            if isinstance(node, BookmarkNode):
+                print("Got inside the if")
+                goto_act = self.acts.get(node.act_path)
+                if not goto_act: raise ValueError(f"Invalid act: {goto_act}")
+                if goto_act == act:
+                    print("Going to bookmark in this act")
+                    node_index = node.position+1
+                    continue
+                else:
+                    print(f"Not this act, it's act: {goto_act.name}")
+                    return self.render_act(goto_act, node.position+1)
+            else:
+                node_index += 1
+        ...
+    
+    def render_node(self, node:Node, act:Act) -> Node | None:
+        if isinstance(node, GotoNode):
+            bkmk =  get_bookmark_for_goto(node, act, self.acts)
+            if bkmk:
+                print(f"Trying to #goto bookmark '{bkmk.name}' in act {bkmk.act_path} from act '{act.name}'")
+                return bkmk
+        
         if isinstance(node, TextNode):
             print(f"text: {get_interpolated_text_line(node.text, self.variables)}")
         
@@ -49,7 +77,7 @@ class Game:
             selected = node.options[choice]
             
             for child in selected.children:
-                self.render_node(child)
+                self.render_node(child, act)
         
         if isinstance(node, ConditionNode):
             first_true_branch_found = False
@@ -58,16 +86,13 @@ class Game:
                 if validate(n, self.variables):
                     first_true_branch_found = True
                     for child in n.children:
-                        self.render_node(child)
+                        self.render_node(child,act)
         
         if isinstance(node, OptionNode):
-            print(f'Option: {node.text}')
-            print("Printing children of option")
             for c in node.children:
-                self.render_node(c)
+                self.render_node(c, act)
                 
         if isinstance(node, SetNode):
             if node.variable not in self.variables.keys():
                 raise ValueError(f"Invalid variable to set value")
             self.variables[node.variable] = eval(node.expression, self.variables)
-            
