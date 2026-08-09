@@ -31,6 +31,11 @@ class SetupData:
     acts: list[str]
 
 @dataclass
+class GotoData:
+    target_name: str
+    act_name: str | None
+
+@dataclass
 class ConditionBranch:
     condition: Expression | None
     children: list[Node]
@@ -67,3 +72,7 @@ class ChoiceNode(Node):
 @dataclass
 class ConditionNode(Node):
     branches: list[ConditionBranch]
+
+@dataclass
+class GotoNode(Node):
+    target: GotoData

@@ -94,7 +94,9 @@ class Interpreter:
 
         act = Act(act_name, act_path)
         parser = Parser(variables, act_path)
-        nodes = parser.parse(lines)
+        nodes, bookmarks = parser.parse(lines)
+        for bkmk in bookmarks:
+            act.add_bookmark(bkmk) # type: ignore
         
         for node in nodes:
             act.nodes.append(node)

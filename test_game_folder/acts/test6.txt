@@ -1,0 +1,10 @@
+#bookmark testLocal
+This is a test for the #goto logic
+After this I should go to the bookmark teste in the act test3
+Now this one should be in this file:
+#choice
+    *option go to local bookmark
+        #goto testLocal
+    *option go to external bookmark
+        #goto test2 test_de_bookmark
+    *option finish

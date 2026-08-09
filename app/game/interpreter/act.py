@@ -7,9 +7,11 @@ class Act:
         self.name = name
         self.path: Path
         self.nodes:list[Node] = []
-        self.bookmarks = []
+        self.bookmarks:list[BookmarkNode] = []
     
     def add_bookmark(self, bookmark: BookmarkNode):
+        if bookmark in self.bookmarks:
+            raise ValueError(f'Bookmark "{bookmark.name} already exists"')
         self.bookmarks.append(bookmark)
     
     def add_text_node(self, node: TextNode):

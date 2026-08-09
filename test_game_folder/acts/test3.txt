@@ -1,6 +1,6 @@
 Here I will test the choice logic
 First things first, I need to detect the #choice
-
+#bookmark teste
 #choice
     *option Then I have to detect indented lines
         And also nested lines
