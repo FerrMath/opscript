@@ -31,43 +31,54 @@ class Game:
 
     
     def run(self):
-        for act_value in self.acts.values():
-            self.render_act(act_value)
+        if not self.acts:
+            raise ValueError("The game has no acts")
+        acts = list(self.acts.values())
+        current_act_index = 0
+        current_act = acts[current_act_index]
+        node_index = 0
+        
+        while True:
+            if node_index >= len(current_act.nodes):
+                current_act_index += 1
+
+                if current_act_index >= len(acts):
+                    print("\n\n\n The end \n\n\n")
+                    return
+
+                current_act = acts[current_act_index]
+                node_index = 0
+                continue
             
-    
-    def render_act(self, act: Act, start_node_position:int=0) -> Act | None:
-    
-        node_index = start_node_position
-        while node_index < len(act.nodes):
-            base_node = act.nodes[node_index]
+            current_node = current_act.nodes[node_index]
+            jump = self.render_node(current_node, current_act)
             
-            node = self.render_node(base_node, act)
-            if isinstance(node, BookmarkNode):
-                print("Got inside the if")
-                goto_act = self.acts.get(node.act_path)
-                if not goto_act: raise ValueError(f"Invalid act: {goto_act}")
-                if goto_act == act:
-                    print("Going to bookmark in this act")
-                    node_index = node.position+1
-                    continue
-                else:
-                    print(f"Not this act, it's act: {goto_act.name}")
-                    return self.render_act(goto_act, node.position+1)
-            else:
+            if jump is None:
                 node_index += 1
-        ...
+                continue
+            
+            target_act = self.acts.get(jump.act_path)
+
+            if target_act is None:
+                raise ValueError(f'Invalid target act path: {jump.act_path}')
+            
+            current_act = target_act
+            current_act_index  = acts.index(target_act)
+            node_index = self.get_bookmark_index(current_act, jump)
+            print("Changed the index correctly")
     
-    def render_node(self, node:Node, act:Act) -> Node | None:
+    def render_node(self, node:Node, act:Act) -> BookmarkNode | None:
         if isinstance(node, GotoNode):
             bkmk =  get_bookmark_for_goto(node, act, self.acts)
             if bkmk:
                 print(f"Trying to #goto bookmark '{bkmk.name}' in act {bkmk.act_path} from act '{act.name}'")
                 return bkmk
         
-        if isinstance(node, TextNode):
-            print(f"text: {get_interpolated_text_line(node.text, self.variables)}")
+        elif isinstance(node, TextNode):
+            text = get_interpolated_text_line(node.text, self.variables)
+            print(f"text: {text}")
         
-        if isinstance(node, ChoiceNode):
+        elif isinstance(node, ChoiceNode):
             print()
             
             for i, option in enumerate(node.options, start=1):
@@ -76,23 +87,40 @@ class Game:
             choice = int(input("> ")) - 1
             selected = node.options[choice]
             
-            for child in selected.children:
-                self.render_node(child, act)
+            return self.render_children(selected.children, act)
         
         if isinstance(node, ConditionNode):
-            first_true_branch_found = False
-            for n in node.branches:
-                if first_true_branch_found: break
-                if validate(n, self.variables):
-                    first_true_branch_found = True
-                    for child in n.children:
-                        self.render_node(child,act)
+            for branch in node.branches:
+                if validate(branch, self.variables):
+                    return self.render_children(branch.children, act)
         
         if isinstance(node, OptionNode):
-            for c in node.children:
-                self.render_node(c, act)
+            return self.render_children(node.children, act)
                 
         if isinstance(node, SetNode):
             if node.variable not in self.variables.keys():
                 raise ValueError(f"Invalid variable to set value")
             self.variables[node.variable] = eval(node.expression, self.variables)
+
+    def render_children(self, children:list[Node], act:Act) -> BookmarkNode | None:
+        
+        for child in children:
+            jump = self.render_node(child, act)
+            
+            if isinstance(jump, BookmarkNode):
+                return jump
+        return None
+    
+    def get_bookmark_index(self, act: Act, bookmark: BookmarkNode) -> int:
+
+        for node in act.bookmarks:
+            if (
+                isinstance(node, BookmarkNode)
+                and node.name == bookmark.name
+            ):
+                return node.position
+
+        raise ValueError(
+            f"Bookmark '{bookmark.name}' "
+            f"was not found in act '{act.name}'."
+        )

@@ -6,7 +6,6 @@ from app.game.interpreter.utils.bookmark import find_bookmark_in_act
 
 
 def get_bookmark_for_goto(goto:GotoNode, current_act:Act, acts:dict[Path,Act]) -> BookmarkNode:
-    print("AQUI NO get_bookmark_for_goto")
     if goto.target.act_name is None or goto.target.act_name == current_act.name:
         bkmk = find_bookmark_in_act(goto.target, current_act)
         if not bkmk:
@@ -14,7 +13,6 @@ def get_bookmark_for_goto(goto:GotoNode, current_act:Act, acts:dict[Path,Act]) -
         return bkmk
     
     target_act = next((act for act in acts.values() if act.name == goto.target.act_name), None)
-    print(target_act)
     if target_act is None:
         raise ValueError("No valid act found to be targeted")
     
