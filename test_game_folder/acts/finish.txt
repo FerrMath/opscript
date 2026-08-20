@@ -1,0 +1,10 @@
+#bookmark early_finish
+#finish
+
+#bookmark late_finish
+----> This should only show up if I pick the finish later option inside the goto act <----
+teste linha 1
+teste linha 2
+teste linha 3
+teste linha 4
+#finish

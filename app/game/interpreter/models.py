@@ -31,6 +31,10 @@ class SetupData:
     acts: list[str]
 
 @dataclass
+class FinishNode(Node):
+    ...
+
+@dataclass
 class GotoData:
     target_name: str
     act_name: str | None

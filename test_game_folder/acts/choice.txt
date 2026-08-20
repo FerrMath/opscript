@@ -10,9 +10,9 @@ First things first, I need to detect the #choice
                 test a
             *option b
                 test b
-    *option another option
-        ...
-        
+    *option early chapter end option
+        #finish
+This should not show up if I pick the "early finish option"
             
 
 # primeiro crio o node de choice que vai segurar todas as informações que vou fazer o parse agora

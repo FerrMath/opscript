@@ -1,7 +1,7 @@
 from typing import Any
 from pathlib import Path
 
-from app.game.interpreter.models import BookmarkNode, Node, TextNode
+from app.game.interpreter.models import BookmarkNode, Node, TextNode, FinishNode
 from app.game.interpreter.parser.bookmark import parse_bookmark
 from app.game.interpreter.parser.choice import parse_choice_node
 from app.game.interpreter.parser.set import parse_set_node
@@ -60,6 +60,9 @@ class Parser:
         if clean.startswith('#bookmark'):
             bkmk, pointer = parse_bookmark(clean, pointer, self.file_path)
             return bkmk, pointer
+        
+        if clean.startswith('#finish'):
+            return (FinishNode(pointer), pointer+1)
         
         # Text verification fallback
         if not clean.startswith(('*', '#')):

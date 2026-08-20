@@ -11,4 +11,4 @@
 // Will leave lists to be handled later
 // #var test_list ["l1", "l2",'l3']
 
-#acts ["test", test2, test3, test4, test5, test6]
+#acts [intro, variables, choice, setters, conditionals, goto, finish]

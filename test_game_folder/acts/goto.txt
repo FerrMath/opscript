@@ -7,4 +7,9 @@ Now this one should be in this file:
         #goto testLocal
     *option go to external bookmark
         #goto test2 test_de_bookmark
-    *option finish
+    *option finish section (This will end the game after the next choice)
+        #choice
+            *option Finish early wth goto
+                #goto finish early_finish
+            *option Finish later with goto
+                #goto finish late_finish
