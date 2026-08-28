@@ -1,0 +1,355 @@
+CHOICE INTEGRATION TESTS
+
+This file assumes the variable set_test already exists.
+The tests reset it when needed.
+
+==================================================
+TEST 1 - BASIC CHOICE AND RETURN TO NORMAL FLOW
+==================================================
+
+#choice
+    *option Pick A
+        TEST 1: Picked A.
+    *option Pick B
+        TEST 1: Picked B.
+    *option Pick C
+        TEST 1: Picked C.
+
+TEST 1 PASS POINT: This text must appear after the selected option.
+
+
+==================================================
+TEST 2 - MULTIPLE LINES INSIDE ONE OPTION
+==================================================
+
+#choice
+    *option Run multi-line option
+        TEST 2: Line 1.
+        TEST 2: Line 2.
+        TEST 2: Line 3.
+    *option Skip multi-line option
+        TEST 2: Skip option selected.
+
+TEST 2 PASS POINT: Execution returned after the option.
+
+
+==================================================
+TEST 3 - NESTED CHOICE
+==================================================
+
+#choice
+    *option Enter nested choice
+        TEST 3: Entered outer option.
+
+        #choice
+            *option Nested A
+                TEST 3: Nested A selected.
+            *option Nested B
+                TEST 3: Nested B selected.
+
+        TEST 3: Returned to the outer option after nested choice.
+
+    *option Skip nested choice
+        TEST 3: Nested choice skipped.
+
+TEST 3 PASS POINT: Execution returned to normal flow.
+
+
+==================================================
+TEST 4 - DEEPLY NESTED CHOICE
+==================================================
+
+#choice
+    *option Enter level 1
+        TEST 4: Level 1.
+
+        #choice
+            *option Enter level 2
+                TEST 4: Level 2.
+
+                #choice
+                    *option Enter level 3
+                        TEST 4: Level 3.
+                    *option Stop at level 2
+                        TEST 4: Stopped inside level 2.
+
+                TEST 4: Returned from level 3 choice.
+
+            *option Stop at level 1
+                TEST 4: Stopped inside level 1.
+
+        TEST 4: Returned from level 2 choice.
+
+    *option Skip deep nesting
+        TEST 4: Deep nesting skipped.
+
+TEST 4 PASS POINT: Deep nesting finished correctly.
+
+
+==================================================
+TEST 5 - CHOICE -> SET -> INTERPOLATION
+==================================================
+
+#set set_test = 0
+TEST 5: Starting value = ${set_test}
+
+#choice
+    *option Add 10
+        #set set_test = ${set_test} + 10
+        TEST 5: Value inside option = ${set_test}
+    *option Add 20
+        #set set_test = ${set_test} + 20
+        TEST 5: Value inside option = ${set_test}
+
+TEST 5 PASS POINT: Updated value outside choice = ${set_test}
+
+
+==================================================
+TEST 6 - CHOICE -> SET -> IF / ELIF / ELSE
+==================================================
+
+#set set_test = 0
+
+#choice
+    *option Set value to 1
+        #set set_test = 1
+    *option Set value to 2
+        #set set_test = 2
+    *option Set value to 3
+        #set set_test = 3
+
+#if ${set_test} == 1
+    TEST 6 PASS: IF branch detected value 1.
+#elif ${set_test} == 2
+    TEST 6 PASS: ELIF branch detected value 2.
+#else
+    TEST 6 PASS: ELSE branch detected value ${set_test}.
+
+TEST 6 PASS POINT: Conditional finished and execution continued.
+
+
+==================================================
+TEST 7 - IF -> CHOICE
+==================================================
+
+#set set_test = 1
+
+#if ${set_test} == 1
+    TEST 7: Condition entered.
+
+    #choice
+        *option Conditional option A
+            TEST 7: Conditional A selected.
+        *option Conditional option B
+            TEST 7: Conditional B selected.
+
+    TEST 7: Returned inside the IF after the choice.
+#else
+    TEST 7 FAIL: This branch should not run.
+
+TEST 7 PASS POINT: Execution returned outside the IF.
+
+
+==================================================
+TEST 8 - CHOICE INSIDE CHOICE WITH SET
+==================================================
+
+#set set_test = 0
+
+#choice
+    *option Enter setter branch
+        #set set_test = ${set_test} + 1
+        TEST 8: After outer set = ${set_test}
+
+        #choice
+            *option Add 10 more
+                #set set_test = ${set_test} + 10
+                TEST 8: Nested result = ${set_test}
+            *option Add 20 more
+                #set set_test = ${set_test} + 20
+                TEST 8: Nested result = ${set_test}
+
+        TEST 8: Value after nested choice = ${set_test}
+
+    *option Leave value unchanged
+        TEST 8: Value was not changed.
+
+TEST 8 PASS POINT: Final value = ${set_test}
+
+
+==================================================
+TEST 9 - CHOICE -> LOCAL GOTO
+==================================================
+
+#choice
+    *option Jump forward
+        TEST 9: About to jump.
+        #goto choice_goto_target
+    *option Do not jump
+        TEST 9: No jump selected.
+
+TEST 9: This line should ONLY appear if Do not jump was selected.
+
+#bookmark choice_goto_target
+TEST 9 PASS POINT: Reached the goto target.
+
+
+==================================================
+TEST 10 - NESTED CHOICE -> LOCAL GOTO
+==================================================
+
+#choice
+    *option Enter nested goto test
+        TEST 10: Entered outer option.
+
+        #choice
+            *option Jump out of nested choice
+                TEST 10: Jumping out now.
+                #goto nested_goto_target
+            *option Stay in nested choice
+                TEST 10: Stayed in nested choice.
+
+        TEST 10: This line should ONLY appear if Stay in nested choice was selected.
+
+    *option Skip nested goto
+        TEST 10: Nested goto test skipped.
+
+TEST 10: This line should appear for Stay or Skip, but NOT for Jump.
+
+#bookmark nested_goto_target
+TEST 10 PASS POINT: Reached nested goto target.
+
+
+==================================================
+TEST 11 - GOTO BACK TO A CHOICE WITH UPDATED VARIABLE
+==================================================
+
+#set set_test = 0
+
+#bookmark repeated_choice
+TEST 11: Current value before choice = ${set_test}
+
+#choice
+    *option Add 1 and repeat
+        #set set_test = ${set_test} + 1
+        TEST 11: Updated value before goto = ${set_test}
+        #goto repeated_choice
+
+    *option Subtract 1 and repeat
+        #set set_test = ${set_test} - 1
+        TEST 11: Updated value before goto = ${set_test}
+        #goto repeated_choice
+
+    *option Exit repeated choice
+        TEST 11: Leaving repeated choice with value ${set_test}.
+
+TEST 11 PASS POINT: Final repeated-choice value = ${set_test}
+
+
+==================================================
+TEST 12 - CONDITION INSIDE OPTION USING UPDATED VALUE
+==================================================
+
+#set set_test = 0
+
+#choice
+    *option Make value positive
+        #set set_test = 5
+
+        #if ${set_test} > 0
+            TEST 12 PASS: Positive value detected inside option.
+        #else
+            TEST 12 FAIL: Positive value was not detected.
+
+    *option Make value negative
+        #set set_test = 0 - 5
+
+        #if ${set_test} < 0
+            TEST 12 PASS: Negative value detected inside option.
+        #else
+            TEST 12 FAIL: Negative value was not detected.
+
+TEST 12 PASS POINT: Value outside option = ${set_test}
+
+
+==================================================
+TEST 13 - NESTED CONDITION -> NESTED CHOICE -> SET
+==================================================
+
+#set set_test = 1
+
+#if ${set_test} == 1
+    TEST 13: Entered condition.
+
+    #choice
+        *option Add 1
+            #set set_test = ${set_test} + 1
+        *option Add 2
+            #set set_test = ${set_test} + 2
+
+    TEST 13: Value after choice while still inside IF = ${set_test}
+
+TEST 13 PASS POINT: Final value = ${set_test}
+
+
+==================================================
+TEST 14 - SEQUENTIAL CHOICES DO NOT INTERFERE
+==================================================
+
+#choice
+    *option First choice A
+        TEST 14: First A.
+    *option First choice B
+        TEST 14: First B.
+
+TEST 14: Between both choices.
+
+#choice
+    *option Second choice A
+        TEST 14: Second A.
+    *option Second choice B
+        TEST 14: Second B.
+
+TEST 14 PASS POINT: Both sequential choices completed.
+
+
+==================================================
+TEST 15 - OPTION INDENTATION BOUNDARIES
+==================================================
+
+#choice
+    *option First outer option
+        TEST 15: Inside first outer option.
+
+        #choice
+            *option Inner A
+                TEST 15: Inner A.
+            *option Inner B
+                TEST 15: Inner B.
+
+        TEST 15: Back inside first outer option.
+
+    *option Second outer option
+        TEST 15: Inside second outer option.
+
+TEST 15 PASS POINT: This line is outside every option and must be reached.
+
+
+==================================================
+TEST 16 - CHOICE -> FINISH
+==================================================
+
+This must be the final test because #finish ends the current act.
+
+#choice
+    *option Finish immediately
+        TEST 16: #finish selected. Nothing below this option should execute in this act.
+        #finish
+
+    *option Continue before finishing
+        TEST 16: Continue selected.
+
+TEST 16: This line should ONLY appear if Continue before finishing was selected.
+TEST 16: Reaching final #finish now.
+
+#finish
