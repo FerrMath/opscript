@@ -1,5 +1,5 @@
 from typing import Any
-from app.game.interpreter.models import ConditionBranch, Expression
+from app.game.interpreter.models import ConditionBranch
 from app.game.interpreter.utils.expressions import evaluate
 from app.game.interpreter.utils.variables import *
 

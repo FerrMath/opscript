@@ -42,7 +42,6 @@ class Game:
                 current_act_index += 1
 
                 if current_act_index >= len(acts):
-                    print("\n\n\n The end \n\n\n")
                     return
 
                 current_act = acts[current_act_index]
@@ -52,9 +51,7 @@ class Game:
             current_node = current_act.nodes[node_index]
             special_node = self.render_node(current_node, current_act)
             
-            if isinstance(special_node, FinishNode):
-                print('\n\n\n Chapter ended with #finish')
-                
+            if isinstance(special_node, FinishNode):                
                 current_act_index += 1
                 try:
                     current_act = acts[current_act_index]
@@ -73,9 +70,7 @@ class Game:
                 current_act = target_act
                 current_act_index  = acts.index(target_act)
                 node_index = self.get_bookmark_index(current_act, special_node)
-                
-                print(f"Changed the index correctly after")
-                
+                                
             else:
                 node_index += 1
                 continue
@@ -87,7 +82,6 @@ class Game:
         elif isinstance(node, GotoNode):
             bkmk =  get_bookmark_for_goto(node, act, self.acts)
             if bkmk:
-                print(f"Trying to #goto bookmark '{bkmk.name}' in act {bkmk.act_path} from act '{act.name}'")
                 return bkmk
         
         elif isinstance(node, TextNode):
